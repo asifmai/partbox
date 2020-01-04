@@ -78,3 +78,83 @@ module.exports.launchPage = (browser, blockResources = false) => {
     }
   });
 }
+
+module.exports.fetchInnerHTML = (selector, page) => new Promise(async (resolve, reject) => {
+  try {
+    let innerHTML = '';
+    const isNode = await page.$(selector);
+    if (isNode) {
+      innerHTML = await page.$eval(
+          selector, (elm) => elm.innerHTML.trim()
+      )
+    };
+    resolve(innerHTML);
+  } catch (error) {
+    console.log(`fetchInnerText Error: ${error}`);
+    reject(error);
+  }
+});
+
+module.exports.fetchInnerText = (selector, page) => new Promise(async (resolve, reject) => {
+  try {
+    let innerText = '';
+    const isNode = await page.$(selector);
+    if (isNode) {
+      innerText = await page.$eval(
+          selector, (elm) => elm.innerText.trim()
+      )
+    };
+    resolve(innerText);
+  } catch (error) {
+    console.log(`fetchInnerText Error: ${error}`);
+    reject(error);
+  }
+});
+
+module.exports.fetchInnerTextFromMultipleElements = (selector, page) => new Promise(async (resolve, reject) => {
+  try {
+    let innerText = [];
+    const isNode = await page.$(selector);
+    if (isNode) {
+      innerText = await page.$$eval(
+          selector, elms => elms.map(elm => elm.innerText.trim())
+      )
+    };
+    resolve(innerText);
+  } catch (error) {
+    console.log(`fetchInnerTextFromMultipleElements Error: ${error}`);
+    reject(error);
+  }
+});
+
+module.exports.fetchAttribute = (selector, attribute, page) => new Promise(async (resolve, reject) => {
+  try {
+    let attrValue = '';
+    const isNode = await page.$(selector);
+    if (isNode) {
+      attrValue = await page.$eval(selector, (elm, attribute) => elm.getAttribute(attribute).trim(), attribute)
+    } else {
+      console.log(`Node not found`);
+    }
+    resolve(attrValue);
+  } catch (error) {
+    console.log(`fetchAttribute Error: ${error}`);
+    reject(error);
+  }
+});
+
+module.exports.fetchAttributeFromMultipleElements = (selector, attribute, page) => new Promise(async (resolve, reject) => {
+  try {
+    let attrValue = [];
+    const isNode = await page.$(selector);
+    if (isNode) {
+      attrValue = await page.$$eval(
+          selector, elms => elms.map(elm => elm.getAttribute(attribute).trim())
+      )
+    }
+    resolve(attrValue)
+  } catch (error) {
+    console.log(`fetchAttributeFromMultipleElements Error: ${error}`);
+    reject(error);
+  }
+});

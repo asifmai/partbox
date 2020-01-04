@@ -3,12 +3,21 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
 let browser;
-// let categories = [];
-let categories = JSON.parse(fs.readFileSync('categories.json', 'utf8'));
+let categories = [];
+categories = JSON.parse(fs.readFileSync('categories.json', 'utf8'));
 const excludedCategories = ['Part-Box VIP Gift Card', 'Tools']
 const {siteLink} = require('./config');
-const products = [];
-// const products = JSON.parse(fs.readFileSync('products.json', 'utf8'));
+let products = [];
+products = JSON.parse(fs.readFileSync('products.json', 'utf8'));
+
+String.prototype.tru =
+     function( n, useWordBoundary ){
+         if (this.length <= n) { return this; }
+         var subString = this.substr(0, n-1);
+         return (useWordBoundary 
+            ? subString.substr(0, subString.lastIndexOf(' ')) 
+            : subString);
+      };
 
 async function run() {
   try {
@@ -20,12 +29,12 @@ async function run() {
     // fs.writeFileSync('categories.json', JSON.stringify(categories));
     
     // Fetch Product Urls
-    await fetchProductsUrls();
-    console.log(`Number of Products Links fetched: ${products.length}`);
-    fs.writeFileSync('products.json', JSON.stringify(products));
+    // await fetchProductsUrls();
+    // console.log(`Number of Products Links fetched: ${products.length}`);
+    // fs.writeFileSync('products.json', JSON.stringify(products));
 
     // Fetch Products Details
-    // await fetchProducts();
+    await fetchProducts();
 
     await browser.close();
     return true;
@@ -39,7 +48,7 @@ async function run() {
 const fetchProducts = () => new Promise(async (resolve, reject) => {
   try {
     console.log('Fetching Products Details...');
-    const csvHeader = 'Handle,Title,Body (HTML),Vendor,Type,Tags,Published,Option1 Name,Option1 Value,Option2 Name,Option2 Value,Option3 Name,Option3 Value,Variant SKU,Variant Grams,Variant Inventory Tracker,Variant Inventory Qty,Variant Inventory Policy,Variant Fulfillment Service,Variant Price,Variant Compare At Price,Variant Requires Shipping,Variant Taxable,Variant Barcode,Image Src,Image Position,Image Alt Text,Gift Card,SEO Title,SEO Description,Google Shopping / Google Product Category,Google Shopping / Gender,Google Shopping / Age Group,Google Shopping / MPN,Google Shopping / AdWords Grouping,Google Shopping / AdWords Labels,Google Shopping / Condition,Google Shopping / Custom Product,Google Shopping / Custom Label 0,Google Shopping / Custom Label 1,Google Shopping / Custom Label 2,Google Shopping / Custom Label 3,Google Shopping / Custom Label 4,Variant Image,Variant Weight Unit,Variant Tax Code,Cost per item';
+    const csvHeader = 'Handle,Title,Body (HTML),Vendor,Type,Tags,Published,Option1 Name,Option1 Value,Option2 Name,Option2 Value,Option3 Name,Option3 Value,Variant SKU,Variant Grams,Variant Inventory Tracker,Variant Inventory Qty,Variant Inventory Policy,Variant Fulfillment Service,Variant Price,Variant Compare At Price,Variant Requires Shipping,Variant Taxable,Variant Barcode,Image Src,Image Position,Image Alt Text,Gift Card,SEO Title,SEO Description,Google Shopping / Google Product Category,Google Shopping / Gender,Google Shopping / Age Group,Google Shopping / MPN,Google Shopping / AdWords Grouping,Google Shopping / AdWords Labels,Google Shopping / Condition,Google Shopping / Custom Product,Google Shopping / Custom Label 0,Google Shopping / Custom Label 1,Google Shopping / Custom Label 2,Google Shopping / Custom Label 3,Google Shopping / Custom Label 4,Variant Image,Variant Weight Unit,Variant Tax Code,Cost per item\r\n';
     fs.writeFileSync('productDetails.csv', csvHeader);
 
     for (let i = 0; i < products.length; i++) {
@@ -55,10 +64,27 @@ const fetchProducts = () => new Promise(async (resolve, reject) => {
 
 const fetchProductDetails = (prodIndex) => new Promise(async (resolve, reject) => {
   try {
-    console.log(`${prodIndex+1}/${products.length} - Fetching Product (${products[prodIndex].url})`);
-    const page = await Helper.launchPage(browser, true);
+    const product = {};
+    console.log(`${prodIndex+1}/${products.length} - Fetching Product Details: ${products[prodIndex].url}`);
+    const page = await Helper.launchPage(browser, false);
     await page.goto(products[prodIndex].url, {timeout: 0, waitUntil: 'networkidle2'});
+    await page.screenshot({path: 'image.png'});
 
+    product.url = products[prodIndex].url;
+    product.handle = getHandle(products[prodIndex].url);
+    product.title = await getTitle(page);
+    product.body = await getBody(page);
+    product.vendor = await Helper.fetchInnerText('.description > .brand-logo > .brand-logo-text', page);
+    product.type = products[prodIndex].category;
+    product.tags = `${products[prodIndex].category},${product.vendor}`;
+    product.price = await Helper.fetchAttribute('ul.price > .product-price > span[itemprop="price"]', 'content', page);
+    product.image = await Helper.fetchAttribute('.zm-viewer > img:last-child', 'src', page);
+    product.imageAlt = product.title;
+    product.seoTitle = await getSEOTitle(page);
+    product.seoDescription = await getSEODescription(page);
+
+    console.log(product);
+    // fs.appendFileSync('productDetails')
     await page.close()
     resolve()
   } catch (error) {
@@ -66,6 +92,73 @@ const fetchProductDetails = (prodIndex) => new Promise(async (resolve, reject) =
     reject(error);
   }
 });
+
+const getHandle = (url) => {
+  let handle = '';
+  const handleRegEx = /(?<=\.com\/).*$/gi
+  if (handleRegEx.test(url)) {
+    handle = url.match(handleRegEx)[0]
+  }
+
+  return handle;
+}
+
+const getTitle = (page) => new Promise(async (resolve, reject) => {
+  try {
+    const title = await Helper.fetchInnerText('ul.breadcrumb > li:last-child > a', page);
+    const productCode = await Helper.fetchInnerText('.description > .p-model > span.p-model', page);
+
+    resolve(`${title} ${productCode}`);
+  } catch (error) {
+    console.log(`getTitle Error: ${error}`);
+    reject(error);
+  }
+})
+
+const getBody = (page) => new Promise(async (resolve, reject) => {
+  try {
+    const description = await Helper.fetchInnerHTML('.product-tabs > .tabs-content > .tab-pane:first-of-type', page);
+    let applications = '';
+    const secondTabName = await Helper.fetchInnerText('.product-tabs > ul#tabs > li:nth-of-type(2)', page);
+    if (secondTabName == 'Applications') {
+      console.log('Application Found');
+      applications = await Helper.fetchInnerHTML('.product-tabs > .tabs-content > .tab-pane:nth-of-type(2)', page);
+    } else {
+      console.log('No Application Found');
+    }
+
+    resolve(`${description}${applications}`);
+  } catch (error) {
+    console.log(`getBody Error: ${error}`);
+    reject(error);
+  }
+})
+
+const getSEOTitle = (page) => new Promise(async (resolve, reject) => {
+  try {
+    const title = await Helper.fetchInnerText('ul.breadcrumb > li:last-child > a', page);
+    const maxLength = 70
+    let trimmedTitle = title.substr(0, maxLength);
+    trimmedTitle = trimmedTitle.substr(0, Math.min(trimmedTitle.length, trimmedTitle.lastIndexOf(" ")))
+    resolve(trimmedTitle);
+  } catch (error) {
+    console.log(`getSEOTitle Error: ${error}`);
+    reject(error);
+  }
+})
+
+const getSEODescription = (page) => new Promise(async (resolve, reject) => {
+  try {
+    const description = await Helper.fetchInnerText('.product-tabs > .tabs-content > .tab-pane:first-of-type', page);
+    const maxLength = 320;
+    let trimmedDesc = description.substr(0, maxLength);
+    trimmedDesc = trimmedDesc.substr(0, Math.min(trimmedDesc.length, trimmedDesc.lastIndexOf(" ")))
+    resolve(trimmedDesc);
+  } catch (error) {
+    console.log(`getSEODescription Error: ${error}`);
+    reject(error);
+  }
+})
 
 // PRODUCT URLS FUNCTIONS
 const fetchProductsUrls = () => new Promise(async (resolve, reject) => {
