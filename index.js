@@ -39,7 +39,7 @@ async function run() {
 const fetchProducts = () => new Promise(async (resolve, reject) => {
   try {
     console.log('Fetching Products Details...');
-    const csvHeader = 'this,that,those';
+    const csvHeader = 'Handle,Title,Body (HTML),Vendor,Type,Tags,Published,Option1 Name,Option1 Value,Option2 Name,Option2 Value,Option3 Name,Option3 Value,Variant SKU,Variant Grams,Variant Inventory Tracker,Variant Inventory Qty,Variant Inventory Policy,Variant Fulfillment Service,Variant Price,Variant Compare At Price,Variant Requires Shipping,Variant Taxable,Variant Barcode,Image Src,Image Position,Image Alt Text,Gift Card,SEO Title,SEO Description,Google Shopping / Google Product Category,Google Shopping / Gender,Google Shopping / Age Group,Google Shopping / MPN,Google Shopping / AdWords Grouping,Google Shopping / AdWords Labels,Google Shopping / Condition,Google Shopping / Custom Product,Google Shopping / Custom Label 0,Google Shopping / Custom Label 1,Google Shopping / Custom Label 2,Google Shopping / Custom Label 3,Google Shopping / Custom Label 4,Variant Image,Variant Weight Unit,Variant Tax Code,Cost per item';
     fs.writeFileSync('productDetails.csv', csvHeader);
 
     for (let i = 0; i < products.length; i++) {
@@ -56,7 +56,10 @@ const fetchProducts = () => new Promise(async (resolve, reject) => {
 const fetchProductDetails = (prodIndex) => new Promise(async (resolve, reject) => {
   try {
     console.log(`${prodIndex+1}/${products.length} - Fetching Product (${products[prodIndex].url})`);
-    
+    const page = await Helper.launchPage(browser, true);
+    await page.goto(products[prodIndex].url, {timeout: 0, waitUntil: 'networkidle2'});
+
+    await page.close()
     resolve()
   } catch (error) {
     console.log(`fetchProductDetails (${products[prodIndex].url}) Error: ${error}`);
@@ -85,8 +88,22 @@ const getProductLinksFromCategory = (cat, index) => new Promise(async (resolve, 
     console.log(`${index+1}/${categories.length} - Fetching Product Links from Category: ${cat.url}`);
     const page = await Helper.launchPage(browser, false);
     await page.goto(`${cat.url}#/sort=p.sort_order/order=ASC/limit=100`, {timeout: 0, waitUntil: 'networkidle2'});
+    const gotProducts = await page.$('.pagination');
+    if (gotProducts) {
+      await fetchActualLinks(page);
+    }
+    
+    await page.close();
+    resolve();
+  } catch (error) {
+    console.log(`getProductLinksFromCategory(${cat.name}) Error: ${error}`);
+    reject(error);
+  }
+});
+
+const fetchActualLinks = (page) => new Promise(async (resolve, reject) => {
+  try {
     await page.waitFor(10000);
-    await page.waitForSelector('.pagination');
     let noOfPages = 0;
     const gotPages = await page.$('.pagination ul > li:last-child > a');
     if (gotPages) {
@@ -113,10 +130,9 @@ const getProductLinksFromCategory = (cat, index) => new Promise(async (resolve, 
 
     console.log(`No of Products found in Category: ${cat.products.length}`);
     
-    await page.close();
     resolve();
   } catch (error) {
-    console.log(`getProductLinksFromCategory(${cat.name}) Error: ${error}`);
+    console.log(`fetchActualLinks Error: ${error}`);
     reject(error);
   }
 });
