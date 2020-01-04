@@ -70,7 +70,7 @@ const fetchProductsUrls = () => new Promise(async (resolve, reject) => {
   try {
     console.log('Fetching Products Links...');
     
-    for (let i = 0; i < 3; i++) {
+    for (let i = 28; i < 30; i++) {
       await getProductLinksFromCategory(categories[i], i);
     }
     
@@ -95,11 +95,11 @@ const getProductLinksFromCategory = (cat, index) => new Promise(async (resolve, 
         elms => elms.map(elm => elm.getAttribute('href'))
       );
       console.log(`Category got Subcategories: ${subcats.length}`);
-      // for (let i = 0; i < subcats.length; i++) {
-      //   await page.goto(`${subcats[i].url}#/sort=p.sort_order/order=ASC/limit=100`, {timeout: 0, waitUntil: 'networkidle2'});
-      //   await page.$('.pagination');
-      //   await fetchActualLinks(cat, page)
-      // }
+      for (let i = 0; i < subcats.length; i++) {
+        await page.goto(`${subcats[i]}#/sort=p.sort_order/order=ASC/limit=100`, {timeout: 0, waitUntil: 'networkidle2'});
+        await page.$('.pagination');
+        await fetchActualLinks(cat.name, subcats[i], page)
+      }
     }
     
     await page.close();
