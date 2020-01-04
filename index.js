@@ -35,6 +35,7 @@ async function run() {
   }
 }
 
+// PRODUCT DETAILS FUNCTIONS
 const fetchProducts = () => new Promise(async (resolve, reject) => {
   try {
     console.log('Fetching Products Details...');
@@ -66,11 +67,12 @@ const fetchProductDetails = (prodIndex) => new Promise(async (resolve, reject) =
   }
 });
 
+// PRODUCT URLS FUNCTIONS
 const fetchProductsUrls = () => new Promise(async (resolve, reject) => {
   try {
     console.log('Fetching Products Links...');
     
-    for (let i = 28; i < 30; i++) {
+    for (let i = 0; i < categories.length; i++) {
       await getProductLinksFromCategory(categories[i], i);
     }
     
@@ -151,6 +153,7 @@ const fetchActualLinks = (catname, caturl, page) => new Promise(async (resolve, 
   }
 });
 
+// CATEGORIES FUNCTIONS
 const fetchCategories = () => new Promise(async (resolve, reject) => {
   try {
     console.log('Fetching Categories...');
