@@ -71,7 +71,7 @@ const fetchProductsUrls = () => new Promise(async (resolve, reject) => {
   try {
     console.log('Fetching Products Links...');
     
-    for (let i = 0; i < categories.length; i++) {
+    for (let i = 28; i < categories.length; i++) {
       await getProductLinksFromCategory(categories[i], i);
     }
     
@@ -91,6 +91,12 @@ const getProductLinksFromCategory = (cat, index) => new Promise(async (resolve, 
     const gotProducts = await page.$('.pagination');
     if (gotProducts) {
       await fetchActualLinks(cat, page);
+    } else {
+      const subcats = await page.$$eval(
+          '.refine-images > .refine-image > a',
+          elms => elms.map(elm => elm.getAttribute('href'))
+      );
+      console.log(subcats);
     }
     
     await page.close();
