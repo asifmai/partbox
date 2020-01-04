@@ -8,6 +8,7 @@ let categories = JSON.parse(fs.readFileSync('categories.json', 'utf8'));
 const excludedCategories = ['Part-Box VIP Gift Card', 'Tools']
 const {siteLink} = require('./config');
 const products = [];
+// const products = JSON.parse(fs.readFileSync('products.json', 'utf8'));
 
 async function run() {
   try {
@@ -23,6 +24,9 @@ async function run() {
     await correctProducts();
     fs.writeFileSync('products.json', JSON.stringify(products));
 
+    // Fetch Products Details
+    // await fetchProducts();
+
     await browser.close();
     return true;
   } catch (error) {
@@ -31,8 +35,38 @@ async function run() {
   }
 }
 
+const fetchProducts = () => new Promise(async (resolve, reject) => {
+  try {
+    console.log('Fetching Products Details...');
+    const csvHeader = 'this,that,those';
+    fs.writeFileSync('productDetails.csv', csvHeader);
+
+    for (let i = 0; i < products.length; i++) {
+      await fetchProductDetails(i);
+    }
+
+    resolve();
+  } catch (error) {
+    console.log(`fetchProducts Error: ${error}`);
+    reject(error);
+  }
+});
+
+const fetchProductDetails = (prodIndex) => new Promise(async (resolve, reject) => {
+  try {
+    console.log(`${prodIndex+1}/${products.length} - Fetching Product (${products[prodIndex].url})`);
+    
+    resolve()
+  } catch (error) {
+    console.log(`fetchProductDetails (${products[prodIndex].url}) Error: ${error}`);
+    reject(error);
+  }
+});
+
 const fetchProductsUrls = () => new Promise(async (resolve, reject) => {
   try {
+    console.log('Fetching Products Links...');
+    
     for (let i = 0; i < categories.length; i++) {
       await getProductLinksFromCategory(categories[i], i);
     }
@@ -101,7 +135,8 @@ const correctProducts = () => {
 
 const fetchCategories = () => new Promise(async (resolve, reject) => {
   try {
-    console.log('Fetching Categories');
+    console.log('Fetching Categories...');
+
     const page = await Helper.launchPage(browser, true);
     await page.goto(siteLink, {timeout: 0, waitUntil: 'networkidle2'});
 
