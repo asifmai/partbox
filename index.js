@@ -141,10 +141,7 @@ const fetchActualLinks = (catname, caturl, page) => new Promise(async (resolve, 
         }
         products.push(newProduct);
       }
-    }
-
-    console.log(`No of Products found in Category: ${cat.products.length}`);
-    
+    }    
     resolve();
   } catch (error) {
     console.log(`fetchActualLinks Error: ${error}`);
