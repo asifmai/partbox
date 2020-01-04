@@ -90,7 +90,7 @@ const getProductLinksFromCategory = (cat, index) => new Promise(async (resolve, 
     await page.goto(`${cat.url}#/sort=p.sort_order/order=ASC/limit=100`, {timeout: 0, waitUntil: 'networkidle2'});
     const gotProducts = await page.$('.pagination');
     if (gotProducts) {
-      await fetchActualLinks(page);
+      await fetchActualLinks(cat, page);
     }
     
     await page.close();
@@ -101,7 +101,7 @@ const getProductLinksFromCategory = (cat, index) => new Promise(async (resolve, 
   }
 });
 
-const fetchActualLinks = (page) => new Promise(async (resolve, reject) => {
+const fetchActualLinks = (cat, page) => new Promise(async (resolve, reject) => {
   try {
     await page.waitFor(10000);
     let noOfPages = 0;
