@@ -97,7 +97,6 @@ const getProductLinksFromCategory = (cat, index) => new Promise(async (resolve, 
     } else {
       noOfPages = 1;
     }
-    console.log(`No of Pages found in Category: ${noOfPages}`);
 
     for (let i = 0; i < noOfPages; i++) {
       if (i > 0) {
