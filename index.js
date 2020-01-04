@@ -21,7 +21,6 @@ async function run() {
     
     // Fetch Product Urls
     await fetchProductsUrls();
-    await correctProducts();
     console.log(`Number of Products Links fetched: ${products.length}`);
     fs.writeFileSync('products.json', JSON.stringify(products));
 
@@ -71,7 +70,7 @@ const fetchProductsUrls = () => new Promise(async (resolve, reject) => {
   try {
     console.log('Fetching Products Links...');
     
-    for (let i = 28; i < categories.length; i++) {
+    for (let i = 0; i < 3; i++) {
       await getProductLinksFromCategory(categories[i], i);
     }
     
@@ -84,19 +83,23 @@ const fetchProductsUrls = () => new Promise(async (resolve, reject) => {
 
 const getProductLinksFromCategory = (cat, index) => new Promise(async (resolve, reject) => {
   try {
-    cat.products = [];
     console.log(`${index+1}/${categories.length} - Fetching Product Links from Category: ${cat.url}`);
     const page = await Helper.launchPage(browser, false);
     await page.goto(`${cat.url}#/sort=p.sort_order/order=ASC/limit=100`, {timeout: 0, waitUntil: 'networkidle2'});
     const gotProducts = await page.$('.pagination');
     if (gotProducts) {
-      await fetchActualLinks(cat, page);
+      await fetchActualLinks(cat.name, cat.url, page);
     } else {
       const subcats = await page.$$eval(
-          '.refine-images > .refine-image > a',
-          elms => elms.map(elm => elm.getAttribute('href'))
+        '.refine-images > .refine-image > a',
+        elms => elms.map(elm => elm.getAttribute('href'))
       );
-      console.log(subcats);
+      console.log(`Category got Subcategories: ${subcats.length}`);
+      // for (let i = 0; i < subcats.length; i++) {
+      //   await page.goto(`${subcats[i].url}#/sort=p.sort_order/order=ASC/limit=100`, {timeout: 0, waitUntil: 'networkidle2'});
+      //   await page.$('.pagination');
+      //   await fetchActualLinks(cat, page)
+      // }
     }
     
     await page.close();
@@ -107,7 +110,7 @@ const getProductLinksFromCategory = (cat, index) => new Promise(async (resolve, 
   }
 });
 
-const fetchActualLinks = (cat, page) => new Promise(async (resolve, reject) => {
+const fetchActualLinks = (catname, caturl, page) => new Promise(async (resolve, reject) => {
   try {
     await page.waitFor(10000);
     let noOfPages = 0;
@@ -123,7 +126,7 @@ const fetchActualLinks = (cat, page) => new Promise(async (resolve, reject) => {
 
     for (let i = 0; i < noOfPages; i++) {
       if (i > 0) {
-        await page.goto(`${cat.url}#/sort=p.sort_order/order=ASC/limit=100/page=${i+1}`, {timeout: 0, waitUntil: 'networkidle2'});
+        await page.goto(`${caturl}#/sort=p.sort_order/order=ASC/limit=100/page=${i+1}`, {timeout: 0, waitUntil: 'networkidle2'});
       }
       await page.waitFor(5000);
       await page.waitForSelector('.product-list > .product-list-item .image > a');
@@ -131,7 +134,13 @@ const fetchActualLinks = (cat, page) => new Promise(async (resolve, reject) => {
           '.product-list > .product-list-item .image > a',
           elms => elms.map(elm => elm.getAttribute('href'))
       );
-      cat.products.push(...pageUrls);
+      for (let j = 0; j < pageUrls.length; j++) {
+        const newProduct = {
+          category: catname,
+          url: pageUrls[j]
+        }
+        products.push(newProduct);
+      }
     }
 
     console.log(`No of Products found in Category: ${cat.products.length}`);
@@ -142,18 +151,6 @@ const fetchActualLinks = (cat, page) => new Promise(async (resolve, reject) => {
     reject(error);
   }
 });
-
-const correctProducts = () => {
-  for (let i = 0; i < categories.length; i++) {
-    for (let j = 0; j < categories[i].products.length; j++) {
-      const newProduct = {
-        category: categories[i].name,
-        url: categories[i].products[j],
-      }
-      products.push(newProduct)
-    }
-  }
-}
 
 const fetchCategories = () => new Promise(async (resolve, reject) => {
   try {
