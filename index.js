@@ -22,6 +22,7 @@ async function run() {
     // Fetch Product Urls
     await fetchProductsUrls();
     await correctProducts();
+    console.log(`Number of Products Links fetched: ${products.length}`);
     fs.writeFileSync('products.json', JSON.stringify(products));
 
     // Fetch Products Details
