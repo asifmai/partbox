@@ -129,17 +129,19 @@ const fetchActualLinks = (catname, caturl, page) => new Promise(async (resolve, 
         await page.goto(`${caturl}#/sort=p.sort_order/order=ASC/limit=100/page=${i+1}`, {timeout: 0, waitUntil: 'networkidle2'});
       }
       await page.waitFor(5000);
-      await page.waitForSelector('.product-list > .product-list-item .image > a');
-      const pageUrls = await page.$$eval(
-          '.product-list > .product-list-item .image > a',
-          elms => elms.map(elm => elm.getAttribute('href'))
-      );
-      for (let j = 0; j < pageUrls.length; j++) {
-        const newProduct = {
-          category: catname,
-          url: pageUrls[j]
+      const gotProducts = await page.$('.product-list > .product-list-item .image > a');
+      if (gotProducts) {
+        const pageUrls = await page.$$eval(
+            '.product-list > .product-list-item .image > a',
+            elms => elms.map(elm => elm.getAttribute('href'))
+        );
+        for (let j = 0; j < pageUrls.length; j++) {
+          const newProduct = {
+            category: catname,
+            url: pageUrls[j]
+          }
+          products.push(newProduct);
         }
-        products.push(newProduct);
       }
     }    
     resolve();
