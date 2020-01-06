@@ -25,14 +25,14 @@ async function run() {
     browser = await Helper.launchBrowser(true);
 
     // Fetch Categories
-    // await fetchCategories();
-    // await correctCategories();
-    // fs.writeFileSync('categories.json', JSON.stringify(categories));
+    await fetchCategories();
+    await correctCategories();
+    fs.writeFileSync('categories.json', JSON.stringify(categories));
     
     // Fetch Product Urls
-    // await fetchProductsUrls();
-    // console.log(`Number of Products Links fetched: ${products.length}`);
-    // fs.writeFileSync('products.json', JSON.stringify(products));
+    await fetchProductsUrls();
+    console.log(`Number of Products Links fetched: ${products.length}`);
+    fs.writeFileSync('products.json', JSON.stringify(products));
 
     // Fetch Products Details
     await fetchProducts();
