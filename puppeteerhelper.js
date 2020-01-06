@@ -148,9 +148,7 @@ module.exports.fetchAttributeFromMultipleElements = (selector, attribute, page) 
     let attrValue = [];
     const isNode = await page.$(selector);
     if (isNode) {
-      attrValue = await page.$$eval(
-          selector, elms => elms.map(elm => elm.getAttribute(attribute).trim())
-      )
+      attrValue = await page.$$eval(selector, (elms, attribute) => elms.map(elm => elm.getAttribute(attribute).trim()), attribute)
     }
     resolve(attrValue)
   } catch (error) {

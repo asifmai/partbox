@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "csvtojson": "^2.0.10",
     "p-limit": "^2.2.2",
     "puppeteer": "^2.0.0",
     "underscore": "^1.9.1"
